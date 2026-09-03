@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Sign in — Multi Stream Studio</title>
+  <link rel="stylesheet" href="/css/style.css" />
+</head>
+<body>
+  <div class="login-screen">
+    <form class="login-card" id="login-form">
+      <div class="login-brand">
+        <div class="mark">M</div>
+        <div class="name">Multi Stream Studio<small>Production console</small></div>
+      </div>
+      <div class="login-error hidden" id="login-error"></div>
+      <div class="field">
+        <label for="username">Username</label>
+        <input type="text" id="username" name="username" autocomplete="username" required />
+      </div>
+      <div class="field">
+        <label for="password">Password</label>
+        <input type="password" id="password" name="password" autocomplete="current-password" required />
+      </div>
+      <button type="submit" class="btn btn-primary" id="login-btn">Login</button>
+      <div class="login-hint">Default login is admin / admin — change it in Settings once you're in.</div>
+    </form>
+  </div>
+  <script src="/js/login.js"></script>
+</body>
+</html>

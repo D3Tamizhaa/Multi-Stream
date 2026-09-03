@@ -1,0 +1,14 @@
+{
+  "name": "multi-stream-studio",
+  "version": "1.0.0",
+  "description": "Lightweight, self-hosted multi-platform live streaming studio. FFmpeg-powered scene compositing and simultaneous RTMP output to YouTube, Facebook, Twitch, Kick and custom RTMP servers.",
+  "license": "MIT",
+  "engines": {
+    "node": ">=18"
+  },
+  "scripts": {
+    "start": "node server/index.js",
+    "dev": "node server/index.js"
+  },
+  "dependencies": {}
+}
