@@ -304,23 +304,6 @@ footer: [
     body.appendChild(choices);
     open({ title: 'Add Source', bodyNode: body, footer: [cancelBtn()] });
   }
-
-function formatBytes(bytes) {
-  if (!Number.isFinite(bytes) || bytes <= 0) {
-    return '0 B';
-  }
-
-  const units = ['B', 'KB', 'MB', 'GB'];
-
-  const index = Math.min(
-    Math.floor(Math.log(bytes) / Math.log(1024)),
-    units.length - 1
-  );
-
-  const value = bytes / Math.pow(1024, index);
-
-  return `${value.toFixed(index === 0 ? 0 : 1)} ${units[index]}`;
-}
   
 function openAddSourceForm(type) {
   const scene = store.selectedScene();
@@ -334,43 +317,80 @@ function openAddSourceForm(type) {
 
     let uploadXhr = null;
 
-  const uploadProgress = document.createElement('div');
-  uploadProgress.className = 'upload-progress hidden';
+const uploadProgress = document.createElement('div');
+uploadProgress.className = 'upload-progress hidden';
 
-  uploadProgress.innerHTML = `
-    <div class="upload-progress-header">
-      <span class="upload-progress-status">Uploading...</span>
-      <span class="upload-progress-percent">0%</span>
-    </div>
+uploadProgress.innerHTML = `
+  <div class="upload-progress-header">
+    <span class="upload-progress-label">Uploading...</span>
+    <span class="upload-progress-percent">0%</span>
+  </div>
 
-    <div class="upload-progress-track">
-      <div class="upload-progress-bar"></div>
-    </div>
+  <div class="upload-progress-track">
+    <div class="upload-progress-bar"></div>
+  </div>
 
-    <div class="upload-progress-details">
-      <span class="upload-progress-loaded">0 B</span>
-      <span class="upload-progress-total">0 B</span>
-    </div>
-  `;
+  <div class="upload-progress-details">
+    <span class="upload-progress-size">0 B / 0 B</span>
+  </div>
+`;
 
-  const uploadCancelBtn = btn(
-    'Cancel Upload',
-    'btn-danger',
-    () => {
-      if (uploadXhr) {
-        uploadXhr.abort();
-      }
-    }
+body.appendChild(uploadProgress);
+body.appendChild(errBox);
+
+const progressBar = uploadProgress.querySelector('.upload-progress-bar');
+const progressPercent = uploadProgress.querySelector('.upload-progress-percent');
+const progressLabel = uploadProgress.querySelector('.upload-progress-label');
+const progressSize = uploadProgress.querySelector('.upload-progress-size');
+
+function formatBytes(bytes) {
+  if (!Number.isFinite(bytes) || bytes <= 0) {
+    return '0 B';
+  }
+
+  const units = ['B', 'KB', 'MB', 'GB'];
+
+  let value = bytes;
+  let unitIndex = 0;
+
+  while (value >= 1024 && unitIndex < units.length - 1) {
+    value /= 1024;
+    unitIndex++;
+  }
+
+  return `${value.toFixed(value >= 100 || unitIndex === 0 ? 0 : 1)} ${units[unitIndex]}`;
+}
+
+function setUploadProgress({ loaded, total, percent }) {
+  uploadProgress.classList.remove('hidden');
+
+  const safePercent = Math.max(
+    0,
+    Math.min(100, Number(percent) || 0)
   );
 
-  uploadCancelBtn.classList.add('hidden');
+  progressBar.style.width = `${safePercent}%`;
+  progressPercent.textContent = `${safePercent}%`;
 
-  uploadProgress.appendChild(uploadCancelBtn);
-  body.appendChild(uploadProgress);
+  progressSize.textContent =
+    `${formatBytes(loaded)} / ${formatBytes(total)}`;
+}
+
+function setUploadingState(uploading) {
+  isUploading = uploading;
+
+  uploadProgress.classList.toggle(
+    'hidden',
+    !uploading
+  );
+}
 
   let fileInput, widthEl, heightEl, xEl, yEl, loopEl;
   let textEl, fontFamilyEl, fontSizeEl, colorEl;
 
+let uploadController = null;
+let isUploading = false;
+  
   if (type === 'image') {
     const desc = document.createElement('div');
     desc.className = 'modal-desc';
