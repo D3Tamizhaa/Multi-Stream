@@ -1,7 +1,7 @@
 (function () {
   const canvasEl = document.getElementById('workspace-canvas');
-  const previewToggleBtn = document.getElementById('preview-toggle');
-  let previewEnabled = true;
+  const previewToggle = document.getElementById('preview-toggle');
+  let previewEnabled = previewToggle.checked;
   let scale = 1;
 
   function outputSize() {
@@ -210,11 +210,10 @@
     document.addEventListener('pointerup', onUp);
   }
 
-  previewToggleBtn.addEventListener('click', () => {
-    previewEnabled = !previewEnabled;
-    previewToggleBtn.classList.toggle('active', previewEnabled);
-    render();
-  });
+previewToggle.addEventListener('change', () => {
+  previewEnabled = previewToggle.checked;
+  render();
+});
 
   window.addEventListener('resize', render);
   store.subscribe(render);
