@@ -18,11 +18,17 @@
     return data;
   }
 
-  function addSourceWithProgress(sceneId, formData, onProgress) {
-  return new Promise((resolve, reject) => {
-    const xhr = new XMLHttpRequest();
+function addSourceWithProgress(sceneId, formData, onProgress) {
+  let xhr;
 
-    xhr.open('POST', `/api/scenes/${sceneId}/sources`, true);
+  const promise = new Promise((resolve, reject) => {
+    xhr = new XMLHttpRequest();
+
+    xhr.open(
+      'POST',
+      `/api/scenes/${sceneId}/sources`,
+      true
+    );
 
     xhr.upload.addEventListener('progress', (event) => {
       if (!event.lengthComputable) return;
@@ -48,7 +54,7 @@
           ? JSON.parse(xhr.responseText)
           : null;
       } catch (e) {
-        // Ignore invalid/empty response.
+        // Ignore invalid response.
       }
 
       if (xhr.status >= 200 && xhr.status < 300) {
@@ -66,7 +72,11 @@
     });
 
     xhr.addEventListener('error', () => {
-      reject(new Error('Upload failed. Please check your connection.'));
+      reject(
+        new Error(
+          'Upload failed. Please check your connection.'
+        )
+      );
     });
 
     xhr.addEventListener('abort', () => {
@@ -75,12 +85,16 @@
       reject(error);
     });
 
-    xhr.addEventListener('timeout', () => {
-      reject(new Error('Upload timed out'));
-    });
-
     xhr.send(formData);
   });
+
+  promise.abort = () => {
+    if (xhr) {
+      xhr.abort();
+    }
+  };
+
+  return promise;
 }
 
   window.api = {
