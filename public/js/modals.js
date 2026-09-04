@@ -150,6 +150,42 @@ function openAddSourceForm(type) {
   const errBox = document.createElement('div');
   errBox.className = 'login-error hidden';
 
+    let uploadXhr = null;
+
+  const uploadProgress = document.createElement('div');
+  uploadProgress.className = 'upload-progress hidden';
+
+  uploadProgress.innerHTML = `
+    <div class="upload-progress-header">
+      <span class="upload-progress-status">Uploading...</span>
+      <span class="upload-progress-percent">0%</span>
+    </div>
+
+    <div class="upload-progress-track">
+      <div class="upload-progress-bar"></div>
+    </div>
+
+    <div class="upload-progress-details">
+      <span class="upload-progress-loaded">0 B</span>
+      <span class="upload-progress-total">0 B</span>
+    </div>
+  `;
+
+  const uploadCancelBtn = btn(
+    'Cancel Upload',
+    'btn-danger',
+    () => {
+      if (uploadXhr) {
+        uploadXhr.abort();
+      }
+    }
+  );
+
+  uploadCancelBtn.classList.add('hidden');
+
+  uploadProgress.appendChild(uploadCancelBtn);
+  body.appendChild(uploadProgress);
+
   let fileInput, widthEl, heightEl, xEl, yEl, loopEl;
   let textEl, fontFamilyEl, fontSizeEl, colorEl;
 
