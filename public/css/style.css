@@ -325,11 +325,44 @@ input[type="checkbox"] { accent-color: var(--accent); width: 15px; height: 15px;
 
 .workspace-preview-toggle {
   position: absolute;
-  right: -34px;
-  bottom: 8px;
-  display: flex; flex-direction: column; align-items: center; gap: 4px;
+  right: 12px;
+  top: 12px;
+  display: flex;
+  align-items: center;
+  z-index: 5;
 }
-.workspace-row { padding-right: 46px; }
+
+.preview-checkbox {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  padding: 5px 8px;
+  color: var(--text-dim);
+  background: rgba(13, 16, 21, .92);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  cursor: pointer;
+  user-select: none;
+  font-size: 12px;
+}
+
+.preview-checkbox:hover {
+  color: var(--text);
+  border-color: var(--text-faint);
+  background: var(--panel-raised);
+}
+
+.preview-checkbox input {
+  width: 15px;
+  height: 15px;
+  margin: 0;
+  accent-color: var(--accent);
+  cursor: pointer;
+}
+
+.preview-checkbox span {
+  line-height: 1;
+}
 
 /* ---- production panels row (scenes / sources / audio) ---- */
 .panels-row {
