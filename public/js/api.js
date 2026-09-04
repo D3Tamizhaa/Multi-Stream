@@ -18,6 +18,71 @@
     return data;
   }
 
+  function addSourceWithProgress(sceneId, formData, onProgress) {
+  return new Promise((resolve, reject) => {
+    const xhr = new XMLHttpRequest();
+
+    xhr.open('POST', `/api/scenes/${sceneId}/sources`, true);
+
+    xhr.upload.addEventListener('progress', (event) => {
+      if (!event.lengthComputable) return;
+
+      const percent = Math.round(
+        (event.loaded / event.total) * 100
+      );
+
+      if (typeof onProgress === 'function') {
+        onProgress({
+          loaded: event.loaded,
+          total: event.total,
+          percent
+        });
+      }
+    });
+
+    xhr.addEventListener('load', () => {
+      let data = null;
+
+      try {
+        data = xhr.responseText
+          ? JSON.parse(xhr.responseText)
+          : null;
+      } catch (e) {
+        // Ignore invalid/empty response.
+      }
+
+      if (xhr.status >= 200 && xhr.status < 300) {
+        resolve(data);
+        return;
+      }
+
+      const error = new Error(
+        (data && data.error) ||
+        `Request failed (${xhr.status})`
+      );
+
+      error.status = xhr.status;
+      reject(error);
+    });
+
+    xhr.addEventListener('error', () => {
+      reject(new Error('Upload failed. Please check your connection.'));
+    });
+
+    xhr.addEventListener('abort', () => {
+      const error = new Error('Upload cancelled');
+      error.code = 'UPLOAD_ABORTED';
+      reject(error);
+    });
+
+    xhr.addEventListener('timeout', () => {
+      reject(new Error('Upload timed out'));
+    });
+
+    xhr.send(formData);
+  });
+}
+
   window.api = {
     session: () => request('GET', '/api/session'),
     login: (username, password) => request('POST', '/api/login', { json: { username, password } }),
@@ -32,7 +97,7 @@
     activateScene: (id) => request('POST', `/api/scenes/${id}/activate`),
 
     getSources: (sceneId) => request('GET', `/api/scenes/${sceneId}/sources`),
-    addSource: (sceneId, formData) => request('POST', `/api/scenes/${sceneId}/sources`, { isMultipart: true, form: formData }),
+    addSource: (sceneId, formData) => request('POST', `/api/scenes/${sceneId}/sources`, { isMultipart: true, form: formData }), addSourceWithProgress,
     updateSource: (sceneId, id, payload) => request('PUT', `/api/scenes/${sceneId}/sources/${id}`, { json: payload }),
     removeSource: (sceneId, id) => request('DELETE', `/api/scenes/${sceneId}/sources/${id}`),
     moveSource: (sceneId, id, direction) => request('POST', `/api/scenes/${sceneId}/sources/${id}/move`, { json: { direction } }),
