@@ -135,20 +135,106 @@ const UPLOAD_MIME_TYPES = {
 };
 
 function serveUpload(req, res, filename) {
-  const filePath = path.join(store.UPLOADS_DIR, path.basename(filename));
-  fs.readFile(filePath, (err, data) => {
-    if (err) {
-      res.writeHead(404);
-      res.end('Not found');
-      return;
-    }
-    const ext = path.extname(filePath).toLowerCase();
-    res.writeHead(200, {
-      'Content-Type': UPLOAD_MIME_TYPES[ext] || 'application/octet-stream',
-      'Cache-Control': 'private, max-age=3600'
+    const safeFilename = path.basename(filename);
+    const filePath = path.join(store.UPLOADS_DIR, safeFilename);
+
+    fs.stat(filePath, (err, stat) => {
+        if (err || !stat.isFile()) {
+            res.writeHead(404, {
+                'Content-Type': 'text/plain; charset=utf-8'
+            });
+            res.end('Not found');
+            return;
+        }
+
+        const ext = path.extname(filePath).toLowerCase();
+        const contentType =
+            UPLOAD_MIME_TYPES[ext] || 'application/octet-stream';
+
+        const fileSize = stat.size;
+        const range = req.headers.range;
+
+        if (!range) {
+            res.writeHead(200, {
+                'Content-Type': contentType,
+                'Content-Length': fileSize,
+                'Accept-Ranges': 'bytes',
+                'Cache-Control': 'private, max-age=3600'
+            });
+
+            fs.createReadStream(filePath).pipe(res);
+            return;
+        }
+
+        const match = /^bytes=(\d*)-(\d*)$/.exec(range);
+
+        if (!match) {
+            res.writeHead(416, {
+                'Content-Range': `bytes */${fileSize}`
+            });
+            res.end();
+            return;
+        }
+
+        let start;
+        let end;
+
+        if (match[1] === '') {
+            const suffixLength = Number(match[2]);
+
+            if (!Number.isFinite(suffixLength) || suffixLength <= 0) {
+                res.writeHead(416, {
+                    'Content-Range': `bytes */${fileSize}`
+                });
+                res.end();
+                return;
+            }
+
+            start = Math.max(fileSize - suffixLength, 0);
+            end = fileSize - 1;
+        } else {
+            start = Number(match[1]);
+
+            if (!Number.isFinite(start) || start < 0 || start >= fileSize) {
+                res.writeHead(416, {
+                    'Content-Range': `bytes */${fileSize}`
+                });
+                res.end();
+                return;
+            }
+
+            if (match[2] === '') {
+                end = fileSize - 1;
+            } else {
+                end = Number(match[2]);
+
+                if (!Number.isFinite(end) || end < start) {
+                    res.writeHead(416, {
+                        'Content-Range': `bytes */${fileSize}`
+                    });
+                    res.end();
+                    return;
+                }
+
+                end = Math.min(end, fileSize - 1);
+            }
+        }
+
+        const chunkSize = end - start + 1;
+
+        res.writeHead(206, {
+            'Content-Type': contentType,
+            'Content-Length': chunkSize,
+            'Content-Range': `bytes ${start}-${end}/${fileSize}`,
+            'Accept-Ranges': 'bytes',
+            'Cache-Control': 'private, max-age=3600'
+        });
+
+        fs.createReadStream(filePath, {
+            start,
+            end
+        }).pipe(res);
     });
-    res.end(data);
-  });
 }
 
 const server = http.createServer(async (req, res) => {
