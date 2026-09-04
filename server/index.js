@@ -46,18 +46,65 @@ function readBody(req) {
   return new Promise((resolve, reject) => {
     const chunks = [];
     let size = 0;
-    const MAX_SIZE = 500 * 1024 * 1024; // 500MB ceiling for media uploads
-    req.on('data', (chunk) => {
+    let settled = false;
+
+    const MAX_SIZE = 500 * 1024 * 1024;
+
+    function cleanup() {
+      req.removeListener('data', onData);
+      req.removeListener('end', onEnd);
+      req.removeListener('error', onError);
+      req.removeListener('aborted', onAborted);
+      req.removeListener('close', onClose);
+    }
+
+    function fail(error) {
+      if (settled) return;
+
+      settled = true;
+      cleanup();
+      reject(error);
+    }
+
+    function onData(chunk) {
       size += chunk.length;
+
       if (size > MAX_SIZE) {
-        reject(new Error('Request body too large'));
+        fail(new Error('Request body too large'));
         req.destroy();
         return;
       }
+
       chunks.push(chunk);
-    });
-    req.on('end', () => resolve(Buffer.concat(chunks)));
-    req.on('error', reject);
+    }
+
+    function onEnd() {
+      if (settled) return;
+
+      settled = true;
+      cleanup();
+      resolve(Buffer.concat(chunks));
+    }
+
+    function onError(err) {
+      fail(err);
+    }
+
+    function onAborted() {
+      fail(new Error('Request aborted by client'));
+    }
+
+    function onClose() {
+      if (!req.complete) {
+        fail(new Error('Request connection closed before upload completed'));
+      }
+    }
+
+    req.on('data', onData);
+    req.on('end', onEnd);
+    req.on('error', onError);
+    req.on('aborted', onAborted);
+    req.on('close', onClose);
   });
 }
 
