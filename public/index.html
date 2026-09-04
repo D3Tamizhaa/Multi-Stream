@@ -48,11 +48,12 @@
         <!-- Main Workspace -->
         <div class="workspace-row">
           <div class="workspace-canvas" id="workspace-canvas"></div>
-          <div class="workspace-preview-toggle">
-            <button class="icon-btn active" id="preview-toggle" title="Enable/disable workspace preview">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7-11-7-11-7z"/><circle cx="12" cy="12" r="3"/></svg>
-            </button>
-          </div>
+<div class="workspace-preview-toggle">
+  <label class="preview-checkbox" for="preview-toggle">
+    <input type="checkbox" id="preview-toggle" checked />
+    <span>Preview</span>
+  </label>
+</div>
         </div>
 
         <!-- Production Panels: Scenes / Sources / Audio Mixer -->
