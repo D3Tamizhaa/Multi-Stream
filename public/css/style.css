@@ -473,11 +473,13 @@ input[type="checkbox"] { accent-color: var(--accent); width: 15px; height: 15px;
 .modal-footer { display: flex; justify-content: flex-end; gap: 8px; padding: 12px 16px; border-top: 1px solid var(--border-soft); }
 .modal-desc { color: var(--text-dim); font-size: 12px; margin: -6px 0 14px; }
 
-/* ---------- upload progress ---------- */
+/* ============================================================
+   SOURCE UPLOAD PROGRESS
+   ============================================================ */
 
 .upload-progress {
-  margin: 12px 0 4px;
-  padding: 10px;
+  margin: 8px 0 14px;
+  padding: 10px 11px;
   background: var(--bg);
   border: 1px solid var(--border);
   border-radius: var(--radius);
@@ -491,52 +493,46 @@ input[type="checkbox"] { accent-color: var(--accent); width: 15px; height: 15px;
   margin-bottom: 7px;
 }
 
-.upload-progress-status {
+.upload-progress-label {
   color: var(--text);
   font-size: 11.5px;
-  font-weight: 500;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+  font-weight: 600;
 }
 
 .upload-progress-percent {
   color: var(--accent);
   font-family: var(--mono);
   font-size: 11px;
-  flex-shrink: 0;
+  font-weight: 600;
 }
 
 .upload-progress-track {
   width: 100%;
-  height: 7px;
+  height: 6px;
   overflow: hidden;
   background: var(--panel-raised);
   border: 1px solid var(--border);
-  border-radius: 999px;
+  border-radius: 3px;
 }
 
 .upload-progress-bar {
-  width: 0;
+  width: 0%;
   height: 100%;
   background: var(--accent);
-  border-radius: inherit;
-  transition: width .12s ease;
+  box-shadow: 0 0 8px rgba(52, 214, 196, .25);
+  transition: width .08s linear;
 }
 
 .upload-progress-details {
   display: flex;
-  justify-content: space-between;
-  gap: 10px;
-  margin-top: 6px;
+  justify-content: flex-end;
+  margin-top: 5px;
+}
+
+.upload-progress-size {
   color: var(--text-faint);
   font-family: var(--mono);
   font-size: 10px;
-}
-
-.upload-progress .btn {
-  width: 100%;
-  margin-top: 10px;
 }
 
 /* ============================================================
