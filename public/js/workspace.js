@@ -33,6 +33,16 @@
 
   function fileUrl(filename) { return '/uploads/' + encodeURIComponent(filename); }
 
+  function cleanupMediaElements() {
+    const videos = canvasEl.querySelectorAll('video, audio');
+
+    videos.forEach((media) => {
+        media.pause();
+        media.removeAttribute('src');
+        media.load();
+    });
+}
+
   function renderSourceContent(el, source) {
     el.innerHTML = '';
     if (!previewEnabled) return;
@@ -86,6 +96,7 @@
   function render() {
     layout();
     const scene = store.selectedScene();
+    cleanupMediaElements();
     canvasEl.innerHTML = '';
     if (!scene) return;
     scene.sources.forEach((source) => {
