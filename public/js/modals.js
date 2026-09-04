@@ -111,16 +111,181 @@
     open({
       title: 'Scene Properties',
       bodyNode: body,
-      footer: [cancelBtn(), btn('Save', 'btn-primary', async () => {
-        try {
-          await api.renameScene(scene.id, nameEl.value.trim());
-          await store.refreshScenes();
-          close();
-        } catch (e) {
-          errBox.textContent = e.message;
-          errBox.classList.remove('hidden');
+footer: [
+  cancelBtn(),
+
+  btn('Add Source', 'btn-primary', async () => {
+    errBox.classList.add('hidden');
+
+    const sourceName = nameEl.value.trim();
+
+    if (!sourceName) {
+      errBox.textContent = 'Source name is required';
+      errBox.classList.remove('hidden');
+      return;
+    }
+
+    try {
+      const fd = new FormData();
+
+      fd.append('type', type);
+      fd.append('name', sourceName);
+
+      if (type === 'image' || type === 'media') {
+        if (!fileInput.files || !fileInput.files[0]) {
+          throw new Error('Please choose a file');
         }
-      })]
+
+        const file = fileInput.files[0];
+
+        fd.append('file', file);
+        fd.append('width', widthEl.value);
+        fd.append('height', heightEl.value);
+        fd.append('x', xEl.value);
+        fd.append('y', yEl.value);
+
+        if (type === 'media') {
+          fd.append(
+            'loop',
+            loopEl.checked ? 'true' : 'false'
+          );
+        }
+
+        uploadProgress.classList.remove('hidden');
+        uploadCancelBtn.classList.remove('hidden');
+
+        uploadProgress.querySelector(
+          '.upload-progress-status'
+        ).textContent = 'Uploading...';
+
+        uploadProgress.querySelector(
+          '.upload-progress-percent'
+        ).textContent = '0%';
+
+        uploadProgress.querySelector(
+          '.upload-progress-bar'
+        ).style.width = '0%';
+
+        uploadProgress.querySelector(
+          '.upload-progress-loaded'
+        ).textContent = formatBytes(0);
+
+        uploadProgress.querySelector(
+          '.upload-progress-total'
+        ).textContent = formatBytes(file.size);
+
+        activeUpload = api.addSourceWithProgress(
+          scene.id,
+          fd,
+          ({ loaded, total, percent }) => {
+            uploadProgress.querySelector(
+              '.upload-progress-percent'
+            ).textContent = `${percent}%`;
+
+            uploadProgress.querySelector(
+              '.upload-progress-bar'
+            ).style.width = `${percent}%`;
+
+            uploadProgress.querySelector(
+              '.upload-progress-loaded'
+            ).textContent = formatBytes(loaded);
+
+            uploadProgress.querySelector(
+              '.upload-progress-total'
+            ).textContent = formatBytes(total);
+          }
+        );
+
+        uploadCancelBtn.onclick = () => {
+          uploadCancelled = true;
+
+          if (activeUpload) {
+            activeUpload.abort();
+          }
+
+          fileInput.value = '';
+
+          uploadProgress.querySelector(
+            '.upload-progress-status'
+          ).textContent = 'Upload cancelled';
+
+          uploadProgress.querySelector(
+            '.upload-progress-percent'
+          ).textContent = '0%';
+
+          uploadProgress.querySelector(
+            '.upload-progress-bar'
+          ).style.width = '0%';
+
+          uploadCancelBtn.classList.add('hidden');
+
+          setTimeout(() => {
+            close();
+          }, 250);
+        };
+
+        await activeUpload;
+
+        if (uploadCancelled) {
+          return;
+        }
+
+        uploadProgress.querySelector(
+          '.upload-progress-status'
+        ).textContent = 'Upload complete';
+
+        uploadProgress.querySelector(
+          '.upload-progress-percent'
+        ).textContent = '100%';
+
+        uploadProgress.querySelector(
+          '.upload-progress-bar'
+        ).style.width = '100%';
+
+        uploadCancelBtn.classList.add('hidden');
+
+      } else if (type === 'text') {
+        fd.append('text', textEl.value);
+        fd.append('fontFamily', fontFamilyEl.value);
+        fd.append('fontSize', fontSizeEl.value);
+        fd.append('color', colorEl.value + 'FF');
+        fd.append('x', xEl.value);
+        fd.append('y', yEl.value);
+
+        fd.append(
+          'width',
+          Math.max(
+            120,
+            textEl.value.length *
+              fontSizeEl.value *
+              0.6
+          )
+        );
+
+        fd.append(
+          'height',
+          Number(fontSizeEl.value) * 1.4
+        );
+
+        await api.addSource(scene.id, fd);
+      }
+
+      await store.refreshScenes();
+      close();
+
+    } catch (e) {
+      if (e.code === 'UPLOAD_ABORTED' || uploadCancelled) {
+        return;
+      }
+
+      errBox.textContent = e.message;
+      errBox.classList.remove('hidden');
+
+    } finally {
+      activeUpload = null;
+    }
+  })
+]
     });
   }
 
@@ -140,6 +305,23 @@
     open({ title: 'Add Source', bodyNode: body, footer: [cancelBtn()] });
   }
 
+function formatBytes(bytes) {
+  if (!Number.isFinite(bytes) || bytes <= 0) {
+    return '0 B';
+  }
+
+  const units = ['B', 'KB', 'MB', 'GB'];
+
+  const index = Math.min(
+    Math.floor(Math.log(bytes) / Math.log(1024)),
+    units.length - 1
+  );
+
+  const value = bytes / Math.pow(1024, index);
+
+  return `${value.toFixed(index === 0 ? 0 : 1)} ${units[index]}`;
+}
+  
 function openAddSourceForm(type) {
   const scene = store.selectedScene();
   const body = document.createElement('div');
