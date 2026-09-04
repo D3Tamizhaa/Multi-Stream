@@ -209,10 +209,24 @@ const server = http.createServer(async (req, res) => {
       sendJson: (status, payload) => sendJson(res, status, payload)
     };
     await match.handler(ctx);
-  } catch (err) {
-    console.error(err);
-    sendJson(res, 500, { error: err.message || 'Internal server error' });
+} catch (err) {
+  if (
+    err.message === 'Request aborted by client' ||
+    err.message === 'Request connection closed before upload completed'
+  ) {
+    return;
   }
+
+  console.error(err);
+
+  if (!res.headersSent) {
+    sendJson(
+      res,
+      500,
+      { error: err.message || 'Internal server error' }
+    );
+  }
+}
 });
 
 server.listen(PORT, () => {
