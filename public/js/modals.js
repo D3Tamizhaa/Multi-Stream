@@ -508,75 +508,190 @@ let isUploading = false;
     title: `Add ${type[0].toUpperCase() + type.slice(1)} Source`,
     bodyNode: body,
 
-    footer: [
-      cancelBtn(),
+footer: [
+  (() => {
+    const cancel = btn('Cancel', '', () => {
+      if (isUploading && uploadController) {
+        uploadController.abort();
+      }
 
-      btn('Add Source', 'btn-primary', async () => {
-        errBox.classList.add('hidden');
+      uploadController = null;
+      isUploading = false;
 
-        // Validate source name
-        const sourceName = nameEl.value.trim();
+      if (fileInput) {
+        fileInput.value = '';
+      }
 
-        if (!sourceName) {
-          errBox.textContent = 'Source name is required';
-          errBox.classList.remove('hidden');
-          return;
+      close();
+    });
+
+    return cancel;
+  })(),
+
+  btn('Add Source', 'btn-primary', async () => {
+    errBox.classList.add('hidden');
+
+    if (isUploading) {
+      return;
+    }
+
+    const sourceName = nameEl.value.trim();
+
+    if (!sourceName) {
+      errBox.textContent = 'Source name is required';
+      errBox.classList.remove('hidden');
+      return;
+    }
+
+    try {
+      const fd = new FormData();
+
+      fd.append('type', type);
+      fd.append('name', sourceName);
+
+      if (type === 'image' || type === 'media') {
+        if (!fileInput.files || !fileInput.files[0]) {
+          throw new Error('Please choose a file');
         }
 
-        try {
-          const fd = new FormData();
+        const selectedFile = fileInput.files[0];
 
-          fd.append('type', type);
-          fd.append('name', sourceName);
+        fd.append('file', selectedFile);
+        fd.append('width', widthEl.value);
+        fd.append('height', heightEl.value);
+        fd.append('x', xEl.value);
+        fd.append('y', yEl.value);
 
-          if (type === 'image' || type === 'media') {
-            if (!fileInput.files || !fileInput.files[0]) {
-              throw new Error('Please choose a file');
-            }
+        if (type === 'media') {
+          fd.append(
+            'loop',
+            loopEl.checked ? 'true' : 'false'
+          );
+        }
 
-            fd.append('file', fileInput.files[0]);
-            fd.append('width', widthEl.value);
-            fd.append('height', heightEl.value);
-            fd.append('x', xEl.value);
-            fd.append('y', yEl.value);
+        uploadController = new AbortController();
+        setUploadingState(true);
 
-            if (type === 'media') {
-              fd.append(
-                'loop',
-                loopEl.checked ? 'true' : 'false'
-              );
-            }
+        progressLabel.textContent =
+          `Uploading ${type}...`;
 
-          } else if (type === 'text') {
-            fd.append('text', textEl.value);
-            fd.append('fontFamily', fontFamilyEl.value);
-            fd.append('fontSize', fontSizeEl.value);
-            fd.append('color', colorEl.value + 'FF');
-            fd.append('x', xEl.value);
-            fd.append('y', yEl.value);
-            fd.append(
-              'width',
-              Math.max(
-                120,
-                textEl.value.length * fontSizeEl.value * 0.6
-              )
-            );
-            fd.append(
-              'height',
-              Number(fontSizeEl.value) * 1.4
-            );
+        setUploadProgress({
+          loaded: 0,
+          total: selectedFile.size,
+          percent: 0
+        });
+
+        const buttons = root.querySelectorAll(
+          '.modal-footer .btn'
+        );
+
+        buttons.forEach((button) => {
+          if (button.textContent === 'Add Source') {
+            button.disabled = true;
           }
+        });
 
-          await api.addSource(scene.id, fd);
+        try {
+          await api.addSourceWithProgress(
+            scene.id,
+            fd,
+            {
+              signal: uploadController.signal,
+
+              onProgress: ({
+                loaded,
+                total,
+                percent
+              }) => {
+                setUploadProgress({
+                  loaded,
+                  total,
+                  percent
+                });
+              }
+            }
+          );
+
+          progressLabel.textContent = 'Upload complete';
+          progressBar.style.width = '100%';
+          progressPercent.textContent = '100%';
+
           await store.refreshScenes();
+
+          uploadController = null;
+          isUploading = false;
+
           close();
 
         } catch (e) {
-          errBox.textContent = e.message;
-          errBox.classList.remove('hidden');
+
+          if (e.name === 'AbortError') {
+            uploadController = null;
+            isUploading = false;
+
+            if (fileInput) {
+              fileInput.value = '';
+            }
+
+            close();
+            return;
+          }
+
+          throw e;
         }
-      })
-    ]
+
+        return;
+      }
+
+      if (type === 'text') {
+        fd.append('text', textEl.value);
+        fd.append('fontFamily', fontFamilyEl.value);
+        fd.append('fontSize', fontSizeEl.value);
+        fd.append('color', colorEl.value + 'FF');
+        fd.append('x', xEl.value);
+        fd.append('y', yEl.value);
+
+        fd.append(
+          'width',
+          Math.max(
+            120,
+            textEl.value.length *
+              fontSizeEl.value *
+              0.6
+          )
+        );
+
+        fd.append(
+          'height',
+          Number(fontSizeEl.value) * 1.4
+        );
+      }
+
+      await api.addSource(scene.id, fd);
+
+      await store.refreshScenes();
+
+      close();
+
+    } catch (e) {
+      uploadController = null;
+      isUploading = false;
+
+      errBox.textContent = e.message;
+      errBox.classList.remove('hidden');
+
+      const buttons = root.querySelectorAll(
+        '.modal-footer .btn'
+      );
+
+      buttons.forEach((button) => {
+        if (button.textContent === 'Add Source') {
+          button.disabled = false;
+        }
+      });
+    }
+  })
+]
   });
 }
 
