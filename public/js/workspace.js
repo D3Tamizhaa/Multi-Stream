@@ -54,9 +54,10 @@
         const video = document.createElement('video');
         video.src = fileUrl(source.file);
         video.muted = true;
-        video.loop = true;
+        video.loop = !!source.loop;
         video.autoplay = true;
         video.playsInline = true;
+        video.preload = 'metadata';
         el.appendChild(video);
       }
     } else if (source.type === 'text') {
