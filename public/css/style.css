@@ -139,6 +139,19 @@ input[type="checkbox"] { accent-color: var(--accent); width: 15px; height: 15px;
   justify-content: space-between;
 }
 
+.panel-actions {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  margin-left: 8px;
+}
+
+.panel-actions .icon-btn {
+  width: 24px;
+  height: 24px;
+  flex-shrink: 0;
+}
+
 /* ============================================================
    LOGIN
    ============================================================ */
@@ -380,12 +393,13 @@ input[type="checkbox"] { accent-color: var(--accent); width: 15px; height: 15px;
   background: var(--panel);
 }
 .panel:last-child { border-right: none; }
-.panel-body { flex: 1; overflow-y: auto; padding: 4px; }
-.panel-toolbar {
-  display: flex;
-  gap: 3px;
-  padding: 5px 6px;
-  border-top: 1px solid var(--border-soft);
+
+.panel-body {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  overflow-x: hidden;
+  padding: 4px;
 }
 
 .list-row {
