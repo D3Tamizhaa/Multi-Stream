@@ -58,36 +58,56 @@
 
         <!-- Production Panels: Scenes / Sources / Audio Mixer -->
         <div class="panels-row">
-          <section class="panel" id="scenes-panel">
-            <div class="panel-title"><span>Scenes</span></div>
-            <div class="panel-body" id="scenes-list"></div>
-            <div class="panel-toolbar">
-              <button class="icon-btn" id="scene-add" title="Add Scene">+</button>
-              <button class="icon-btn" id="scene-remove" title="Remove Scene">−</button>
-              <button class="icon-btn" id="scene-up" title="Move Up">↑</button>
-              <button class="icon-btn" id="scene-down" title="Move Down">↓</button>
-              <button class="icon-btn" id="scene-props" title="Properties">⚙</button>
-            </div>
-          </section>
+<section class="panel" id="scenes-panel">
+  <div class="panel-title">
+    <span>Scenes</span>
 
-          <section class="panel" id="sources-panel">
-            <div class="panel-title"><span>Sources</span></div>
-            <div class="panel-body" id="sources-list"></div>
-            <div class="panel-toolbar">
-              <button class="icon-btn" id="source-add" title="Add Source">+</button>
-              <button class="icon-btn" id="source-remove" title="Remove Source">−</button>
-              <button class="icon-btn" id="source-lock" title="Lock/Unlock">🔒</button>
-              <button class="icon-btn" id="source-show" title="Show/UnShow">👁</button>
-              <button class="icon-btn" id="source-up" title="Move Up">↑</button>
-              <button class="icon-btn" id="source-down" title="Move Down">↓</button>
-              <button class="icon-btn" id="source-props" title="Properties">⚙</button>
-            </div>
-          </section>
+    <div class="panel-actions">
+      <button class="icon-btn" id="scene-add" title="Add Scene" aria-label="Add Scene">+</button>
+      <button class="icon-btn" id="scene-remove" title="Remove Scene" aria-label="Remove Scene">−</button>
+      <button class="icon-btn" id="scene-up" title="Move Up" aria-label="Move Up">↑</button>
+      <button class="icon-btn" id="scene-down" title="Move Down" aria-label="Move Down">↓</button>
+      <button class="icon-btn" id="scene-props" title="Properties" aria-label="Properties">⚙</button>
+    </div>
+  </div>
 
-          <section class="panel" id="audio-panel">
-            <div class="panel-title"><span>Audio Mixer</span></div>
-            <div class="panel-body" id="audio-mixer-list"></div>
-          </section>
+  <div class="panel-body" id="scenes-list"></div>
+</section>
+
+<section class="panel" id="sources-panel">
+  <div class="panel-title">
+    <span>Sources</span>
+
+    <div class="panel-actions">
+      <button class="icon-btn" id="source-add" title="Add Source" aria-label="Add Source">+</button>
+      <button class="icon-btn" id="source-remove" title="Remove Source" aria-label="Remove Source">−</button>
+      <button class="icon-btn" id="source-lock" title="Lock/Unlock" aria-label="Lock/Unlock">
+        🔒
+      </button>
+      <button class="icon-btn" id="source-show" title="Show/UnShow" aria-label="Show/UnShow">
+        👁
+      </button>
+      <button class="icon-btn" id="source-up" title="Move Up" aria-label="Move Up">↑</button>
+      <button class="icon-btn" id="source-down" title="Move Down" aria-label="Move Down">↓</button>
+      <button class="icon-btn" id="source-props" title="Properties" aria-label="Properties">⚙</button>
+    </div>
+  </div>
+
+  <div class="panel-body" id="sources-list"></div>
+</section>
+
+<section class="panel" id="platforms-panel">
+  <div class="panel-title">
+    <span>Platforms</span>
+
+    <div class="panel-actions">
+      <button class="icon-btn" id="platform-add" title="Add Platform" aria-label="Add Platform">+</button>
+      <button class="icon-btn" id="platform-remove" title="Remove Platform" aria-label="Remove Platform">−</button>
+    </div>
+  </div>
+
+  <div class="panel-body" id="platforms-list"></div>
+</section>
         </div>
 
         <!-- Streaming Controls: Platforms / Controls -->
