@@ -127,16 +127,6 @@
     if (!confirm(`Remove source "${source.name}"?`)) return;
     try { await api.removeSource(scene.id, source.id); store.state.selectedSourceId = null; await store.refreshScenes(); } catch (e) { alert(e.message); }
   });
-  document.getElementById('source-lock').addEventListener('click', async () => {
-    const scene = store.selectedScene(); const source = store.selectedSource();
-    if (!scene || !source) return;
-    await api.updateSource(scene.id, source.id, { locked: !source.locked }); await store.refreshScenes();
-  });
-  document.getElementById('source-show').addEventListener('click', async () => {
-    const scene = store.selectedScene(); const source = store.selectedSource();
-    if (!scene || !source) return;
-    await api.updateSource(scene.id, source.id, { visible: source.visible === false }); await store.refreshScenes();
-  });
   document.getElementById('source-up').addEventListener('click', async () => {
     const scene = store.selectedScene(); const source = store.selectedSource();
     if (!scene || !source) return;
