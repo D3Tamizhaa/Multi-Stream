@@ -4,6 +4,23 @@
   let previewEnabled = previewToggle.checked;
   let scale = 1;
 
+  const SNAP_DISTANCE = 8;
+  const MIN_SOURCE_SIZE = 10;
+
+  const interaction = {
+      active: false,
+      type: null,
+      source: null,
+      el: null,
+      handle: null,
+      pointerId: null,
+      startX: 0,
+      startY: 0,
+      startRect: null,
+      pending: null,
+      raf: 0
+  };
+
   function outputSize() {
     const v = store.state.settings && store.state.settings.video;
     if (!v) return [1920, 1080];
@@ -107,10 +124,14 @@ function cleanupMediaElements() {
       if (source.id === store.state.selectedSourceId) el.classList.add('selected');
       if (source.locked) el.classList.add('locked');
       if (source.visible === false) el.style.opacity = '0.28';
-      el.style.left = px(source.x || 0);
-      el.style.top = px(source.y || 0);
-      el.style.width = px(source.width || 100);
-      el.style.height = px(source.height || 100);
+el.style.left = '0';
+el.style.top = '0';
+el.style.transform =
+    `translate3d(${px(source.x || 0)}, ${px(source.y || 0)}, 0)`;
+
+el.style.width = px(source.width || 100);
+el.style.height = px(source.height || 100);
+
       el.dataset.id = source.id;
 
       const label = document.createElement('div');
@@ -120,13 +141,14 @@ function cleanupMediaElements() {
 
       renderSourceContent(el, source);
 
-      if (!source.locked) {
-        const handle = document.createElement('div');
-        handle.className = 'resize-handle';
-        handle.addEventListener('pointerdown', (e) => startResize(e, source, el));
-        el.appendChild(handle);
-        el.addEventListener('pointerdown', (e) => startDrag(e, source, el));
-      }
+if (!source.locked) {
+    createResizeHandles(el, source);
+
+    el.addEventListener('pointerdown', (e) => {
+        if (e.target.closest('.resize-handle')) return;
+        startDrag(e, source, el);
+    });
+}
 
       el.addEventListener('click', (e) => {
         e.stopPropagation();
@@ -137,6 +159,27 @@ function cleanupMediaElements() {
     });
   }
 
+  function createResizeHandles(el, source) {
+    const handles = [
+        'nw', 'n', 'ne',
+        'w',       'e',
+        'sw', 's', 'se'
+    ];
+
+    handles.forEach((direction) => {
+        const handle = document.createElement('div');
+
+        handle.className = `resize-handle resize-${direction}`;
+        handle.dataset.handle = direction;
+
+        handle.addEventListener('pointerdown', (e) => {
+            startResize(e, source, el, direction);
+        });
+
+        el.appendChild(handle);
+    });
+}
+
   function selectSource(id) {
     store.state.selectedSourceId = id;
     store.notify();
@@ -144,74 +187,371 @@ function cleanupMediaElements() {
 
   canvasEl.addEventListener('click', () => selectSource(null));
 
-  function startDrag(e, source, el) {
-    if (source.locked) return;
+function startDrag(e, source, el) {
+    if (source.locked || interaction.active) return;
+
     e.preventDefault();
     e.stopPropagation();
+
     selectSource(source.id);
-    const startX = e.clientX, startY = e.clientY;
-    const origX = source.x || 0, origY = source.y || 0;
-    const [outW, outH] = outputSize();
 
-    function onMove(ev) {
-      const dx = (ev.clientX - startX) / scale;
-      const dy = (ev.clientY - startY) / scale;
-      const nx = Math.max(0, Math.min(outW - (source.width || 0), Math.round(origX + dx)));
-      const ny = Math.max(0, Math.min(outH - (source.height || 0), Math.round(origY + dy)));
-      el.style.left = px(nx);
-      el.style.top = px(ny);
-      source._pendingX = nx;
-      source._pendingY = ny;
-    }
-    function onUp() {
-      document.removeEventListener('pointermove', onMove);
-      document.removeEventListener('pointerup', onUp);
-      if (source._pendingX !== undefined) {
-        source.x = source._pendingX;
-        source.y = source._pendingY;
-        api.updateSource(store.selectedScene().id, source.id, { x: source.x, y: source.y }).then(() => {
-          window.dispatchEvent(new CustomEvent('sources:changed'));
-        }).catch((err) => alert(err.message));
-      }
-    }
-    document.addEventListener('pointermove', onMove);
-    document.addEventListener('pointerup', onUp);
-  }
+    interaction.active = true;
+    interaction.type = 'drag';
+    interaction.source = source;
+    interaction.el = el;
+    interaction.pointerId = e.pointerId;
 
-  function startResize(e, source, el) {
-    if (source.locked) return;
+    interaction.startX = e.clientX;
+    interaction.startY = e.clientY;
+
+    interaction.startRect = {
+        x: Number(source.x) || 0,
+        y: Number(source.y) || 0,
+        width: Number(source.width) || 100,
+        height: Number(source.height) || 100
+    };
+
+    interaction.pending = { ...interaction.startRect };
+
+    el.setPointerCapture(e.pointerId);
+    el.classList.add('is-dragging');
+
+    el.addEventListener('pointermove', handlePointerMove);
+    el.addEventListener('pointerup', finishPointerInteraction);
+    el.addEventListener('pointercancel', finishPointerInteraction);
+}
+
+function startResize(e, source, el, handle) {
+    if (source.locked || interaction.active) return;
+
     e.preventDefault();
     e.stopPropagation();
+
     selectSource(source.id);
-    const startX = e.clientX, startY = e.clientY;
-    const origW = source.width || 100, origH = source.height || 100;
+
+    interaction.active = true;
+    interaction.type = 'resize';
+    interaction.source = source;
+    interaction.el = el;
+    interaction.handle = handle;
+    interaction.pointerId = e.pointerId;
+
+    interaction.startX = e.clientX;
+    interaction.startY = e.clientY;
+
+    interaction.startRect = {
+        x: Number(source.x) || 0,
+        y: Number(source.y) || 0,
+        width: Number(source.width) || 100,
+        height: Number(source.height) || 100
+    };
+
+    interaction.pending = { ...interaction.startRect };
+
+    el.setPointerCapture(e.pointerId);
+
+    el.classList.add('is-resizing');
+
+    el.addEventListener('pointermove', handlePointerMove);
+    el.addEventListener('pointerup', finishPointerInteraction);
+    el.addEventListener('pointercancel', finishPointerInteraction);
+}
+
+  function handlePointerMove(e) {
+    if (!interaction.active) return;
+    if (interaction.pointerId !== e.pointerId) return;
+
+    e.preventDefault();
+
+    interaction.lastClientX = e.clientX;
+    interaction.lastClientY = e.clientY;
+
+    if (interaction.raf) return;
+
+    interaction.raf = requestAnimationFrame(() => {
+        interaction.raf = 0;
+
+        if (!interaction.active) return;
+
+        const dx = (interaction.lastClientX - interaction.startX) / scale;
+        const dy = (interaction.lastClientY - interaction.startY) / scale;
+
+        if (interaction.type === 'drag') {
+            updateDragPreview(dx, dy);
+        } else {
+            updateResizePreview(dx, dy);
+        }
+    });
+}
+
+  function updateDragPreview(dx, dy) {
+    const start = interaction.startRect;
     const [outW, outH] = outputSize();
 
-    function onMove(ev) {
-      const dx = (ev.clientX - startX) / scale;
-      const dy = (ev.clientY - startY) / scale;
-      const nw = Math.max(10, Math.min(outW - (source.x || 0), Math.round(origW + dx)));
-      const nh = Math.max(10, Math.min(outH - (source.y || 0), Math.round(origH + dy)));
-      el.style.width = px(nw);
-      el.style.height = px(nh);
-      source._pendingW = nw;
-      source._pendingH = nh;
-    }
-    function onUp() {
-      document.removeEventListener('pointermove', onMove);
-      document.removeEventListener('pointerup', onUp);
-      if (source._pendingW !== undefined) {
-        source.width = source._pendingW;
-        source.height = source._pendingH;
-        api.updateSource(store.selectedScene().id, source.id, { width: source.width, height: source.height }).then(() => {
-          window.dispatchEvent(new CustomEvent('sources:changed'));
-        }).catch((err) => alert(err.message));
-      }
-    }
-    document.addEventListener('pointermove', onMove);
-    document.addEventListener('pointerup', onUp);
-  }
+    let x = start.x + dx;
+    let y = start.y + dy;
 
+    x = Math.max(0, Math.min(outW - start.width, x));
+    y = Math.max(0, Math.min(outH - start.height, y));
+
+    const snapped = snapPosition(
+        x,
+        y,
+        start.width,
+        start.height
+    );
+
+    x = Math.max(0, Math.min(outW - start.width, snapped.x));
+    y = Math.max(0, Math.min(outH - start.height, snapped.y));
+
+    interaction.pending = {
+        x: Math.round(x),
+        y: Math.round(y),
+        width: start.width,
+        height: start.height
+    };
+
+    applyPreview(interaction.el, interaction.pending);
+}
+
+  function updateResizePreview(dx, dy) {
+    const start = interaction.startRect;
+    const handle = interaction.handle;
+    const [outW, outH] = outputSize();
+
+    let left = start.x;
+    let top = start.y;
+    let right = start.x + start.width;
+    let bottom = start.y + start.height;
+
+    if (handle.includes('w')) left += dx;
+    if (handle.includes('e')) right += dx;
+    if (handle.includes('n')) top += dy;
+    if (handle.includes('s')) bottom += dy;
+
+    const keepRatio =
+        interaction.source.type === 'image' ||
+        interaction.source.type === 'media';
+
+    let width = right - left;
+    let height = bottom - top;
+
+    if (keepRatio && (handle.length === 2 || handle === 'nw' || handle === 'ne' || handle === 'sw' || handle === 'se')) {
+        const ratio = start.width / Math.max(1, start.height);
+
+        if (Math.abs(dx) >= Math.abs(dy)) {
+            height = width / ratio;
+        } else {
+            width = height * ratio;
+        }
+
+        if (handle.includes('w')) {
+            left = right - width;
+        } else {
+            right = left + width;
+        }
+
+        if (handle.includes('n')) {
+            top = bottom - height;
+        } else {
+            bottom = top + height;
+        }
+    }
+
+    width = Math.max(MIN_SOURCE_SIZE, width);
+    height = Math.max(MIN_SOURCE_SIZE, height);
+
+    if (left < 0) {
+        left = 0;
+        width = right - left;
+    }
+
+    if (top < 0) {
+        top = 0;
+        height = bottom - top;
+    }
+
+    if (right > outW) {
+        right = outW;
+        width = right - left;
+    }
+
+    if (bottom > outH) {
+        bottom = outH;
+        height = bottom - top;
+    }
+
+    const rect = {
+        x: Math.round(left),
+        y: Math.round(top),
+        width: Math.round(width),
+        height: Math.round(height)
+    };
+
+    interaction.pending = rect;
+
+    applyPreview(interaction.el, rect);
+}
+
+  function snapPosition(x, y, width, height) {
+    const scene = store.selectedScene();
+    const [outW, outH] = outputSize();
+
+    const candidatesX = [
+        0,
+        outW / 2,
+        outW - width
+    ];
+
+    const candidatesY = [
+        0,
+        outH / 2,
+        outH - height
+    ];
+
+    if (scene) {
+        scene.sources.forEach((other) => {
+            if (other.id === interaction.source.id) return;
+
+            const ox = Number(other.x) || 0;
+            const oy = Number(other.y) || 0;
+            const ow = Number(other.width) || 0;
+            const oh = Number(other.height) || 0;
+
+            candidatesX.push(
+                ox,
+                ox + ow / 2 - width / 2,
+                ox + ow - width
+            );
+
+            candidatesY.push(
+                oy,
+                oy + oh / 2 - height / 2,
+                oy + oh - height
+            );
+        });
+    }
+
+    const sx = nearestSnap(x, candidatesX);
+    const sy = nearestSnap(y, candidatesY);
+
+    return {
+        x: sx === null ? x : sx,
+        y: sy === null ? y : sy
+    };
+}
+
+function nearestSnap(value, candidates) {
+    let best = null;
+    let distance = SNAP_DISTANCE;
+
+    candidates.forEach((candidate) => {
+        const d = Math.abs(value - candidate);
+
+        if (d <= distance) {
+            distance = d;
+            best = candidate;
+        }
+    });
+
+    return best;
+}
+
+  function applyPreview(el, rect) {
+    el.style.left = '0';
+    el.style.top = '0';
+
+    el.style.width = px(rect.width);
+    el.style.height = px(rect.height);
+
+    el.style.transform =
+        `translate3d(${px(rect.x)}, ${px(rect.y)}, 0)`;
+}
+  
+function finishPointerInteraction(e) {
+    if (!interaction.active) return;
+    if (interaction.pointerId !== e.pointerId) return;
+
+    if (interaction.raf) {
+        cancelAnimationFrame(interaction.raf);
+        interaction.raf = 0;
+    }
+
+    const source = interaction.source;
+    const el = interaction.el;
+    const finalRect = interaction.pending;
+
+    el.releasePointerCapture?.(interaction.pointerId);
+
+    el.removeEventListener('pointermove', handlePointerMove);
+    el.removeEventListener('pointerup', finishPointerInteraction);
+    el.removeEventListener('pointercancel', finishPointerInteraction);
+
+    el.classList.remove('is-dragging', 'is-resizing');
+
+    interaction.active = false;
+
+    if (!finalRect) {
+        resetInteraction();
+        return;
+    }
+
+    const changed =
+        finalRect.x !== interaction.startRect.x ||
+        finalRect.y !== interaction.startRect.y ||
+        finalRect.width !== interaction.startRect.width ||
+        finalRect.height !== interaction.startRect.height;
+
+    if (!changed) {
+        resetInteraction();
+        return;
+    }
+
+    source.x = finalRect.x;
+    source.y = finalRect.y;
+    source.width = finalRect.width;
+    source.height = finalRect.height;
+
+    const scene = store.selectedScene();
+
+    if (!scene) {
+        resetInteraction();
+        return;
+    }
+
+    const updates = {
+        x: source.x,
+        y: source.y,
+        width: source.width,
+        height: source.height
+    };
+
+    api.updateSource(scene.id, source.id, updates)
+        .then(() => {
+            window.dispatchEvent(new CustomEvent('sources:changed'));
+        })
+        .catch((err) => {
+            alert(err.message);
+            workspace.render();
+        })
+        .finally(() => {
+            resetInteraction();
+        });
+}
+
+function resetInteraction() {
+    interaction.active = false;
+    interaction.type = null;
+    interaction.source = null;
+    interaction.el = null;
+    interaction.handle = null;
+    interaction.pointerId = null;
+    interaction.startRect = null;
+    interaction.pending = null;
+    interaction.raf = 0;
+}
+
+  
 previewToggle.addEventListener('change', () => {
   previewEnabled = previewToggle.checked;
   render();
