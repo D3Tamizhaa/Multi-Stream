@@ -73,10 +73,11 @@
         const video = document.createElement('video');
         video.src = fileUrl(source.file);
         video.muted = true;
-        video.loop = !!source.loop;
-        video.autoplay = true;
+        video.loop = false;
+        video.autoplay = false;
         video.playsInline = true;
-        video.preload = 'metadata';
+        video.controls = false;
+        video.preload = 'none';
         el.appendChild(video);
       }
     } else if (source.type === 'text') {
