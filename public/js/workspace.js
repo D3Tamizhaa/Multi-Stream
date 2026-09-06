@@ -33,14 +33,16 @@
 
   function fileUrl(filename) { return '/uploads/' + encodeURIComponent(filename); }
 
-  function cleanupMediaElements() {
-    const videos = canvasEl.querySelectorAll('video, audio');
+function cleanupMediaElements() {
+  const mediaElements = canvasEl.querySelectorAll('video, audio');
 
-    videos.forEach((media) => {
-        media.pause();
-        media.removeAttribute('src');
-        media.load();
-    });
+  mediaElements.forEach((media) => {
+    media.pause();
+
+    media.removeAttribute('src');
+    media.removeAttribute('srcObject');
+    media.load();
+  });
 }
 
   function renderSourceContent(el, source) {
