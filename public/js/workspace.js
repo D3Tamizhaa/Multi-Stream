@@ -1,7 +1,16 @@
 (function () {
   const canvasEl = document.getElementById('workspace-canvas');
   const previewToggle = document.getElementById('preview-toggle');
+  const previewResolutionControl = document.getElementById('preview-resolution-control');
+  const previewResolution = document.getElementById('preview-resolution');
+  
   let previewEnabled = previewToggle.checked;
+  
+  function updatePreviewResolutionVisibility() {
+  previewResolutionControl.classList.toggle('hidden', !previewEnabled);
+  }
+  updatePreviewResolutionVisibility();
+  
   let scale = 1;
 
   function outputSize() {
@@ -212,7 +221,11 @@
 
 previewToggle.addEventListener('change', () => {
   previewEnabled = previewToggle.checked;
+  updatePreviewResolutionVisibility();
   render();
+});
+
+previewResolution.addEventListener('change', () => {
 });
 
   window.addEventListener('resize', render);
