@@ -1,16 +1,7 @@
 (function () {
   const canvasEl = document.getElementById('workspace-canvas');
   const previewToggle = document.getElementById('preview-toggle');
-  const previewResolutionControl = document.getElementById('preview-resolution-control');
-  const previewResolution = document.getElementById('preview-resolution');
-  
   let previewEnabled = previewToggle.checked;
-  
-  function updatePreviewResolutionVisibility() {
-  previewResolutionControl.classList.toggle('hidden', !previewEnabled);
-  }
-  updatePreviewResolutionVisibility();
-  
   let scale = 1;
 
   function outputSize() {
@@ -73,11 +64,10 @@
         const video = document.createElement('video');
         video.src = fileUrl(source.file);
         video.muted = true;
-        video.loop = false;
-        video.autoplay = false;
+        video.loop = !!source.loop;
+        video.autoplay = true;
         video.playsInline = true;
-        video.controls = false;
-        video.preload = 'none';
+        video.preload = 'metadata';
         el.appendChild(video);
       }
     } else if (source.type === 'text') {
@@ -222,11 +212,7 @@
 
 previewToggle.addEventListener('change', () => {
   previewEnabled = previewToggle.checked;
-  updatePreviewResolutionVisibility();
   render();
-});
-
-previewResolution.addEventListener('change', () => {
 });
 
   window.addEventListener('resize', render);
