@@ -1,11 +1,6 @@
 (function () {
   const canvasEl = document.getElementById('workspace-canvas');
   const previewToggle = document.getElementById('preview-toggle');
-  const playbackBorder = document.getElementById('playback-border');
-  const playbackPlay = document.getElementById('playback-play');
-  const playbackPause = document.getElementById('playback-pause');
-  const playbackProgress = document.getElementById('playback-progress');
-  let playbackVideo = null;
   let previewEnabled = previewToggle.checked;
   let scale = 1;
 
@@ -17,68 +12,26 @@
     return [w, h];
   }
 
-function layout() {
-  const [outW, outH] = outputSize();
-  const container = canvasEl.parentElement;
-  const playbackHeight = 50;
-  const availW = container.clientWidth - 40;
-  const availH = container.clientHeight - 40 - playbackHeight;
-  const ratio = outW / outH;
-  let dispW = availW;
-  let dispH = dispW / ratio;
-  if (dispH > availH) {
-    dispH = availH;
-    dispW = dispH * ratio;
+  function layout() {
+    const [outW, outH] = outputSize();
+    const container = canvasEl.parentElement;
+    const availW = container.clientWidth - 40;
+    const availH = container.clientHeight - 40;
+    const ratio = outW / outH;
+    let dispW = availW;
+    let dispH = dispW / ratio;
+    if (dispH > availH) {
+      dispH = availH;
+      dispW = dispH * ratio;
+    }
+    scale = dispW / outW;
+    canvasEl.style.width = dispW + 'px';
+    canvasEl.style.height = dispH + 'px';
   }
-
-  scale = dispW / outW;
-  canvasEl.style.width = dispW + 'px';
-  canvasEl.style.height = dispH + 'px';
-  const previewStage = canvasEl.parentElement;
-  previewStage.style.width = dispW + 'px';
-  previewStage.style.height = (dispH + playbackHeight) + 'px';
-  playbackBorder.style.width = dispW + 'px';
-}
-
 
   function px(n) { return Math.round(n * scale) + 'px'; }
 
-function fileUrl(filename) {
-  return '/uploads/' + encodeURIComponent(filename);
-}
-
-function updatePlaybackControls() {
-  if (!playbackVideo || !Number.isFinite(playbackVideo.duration)) {
-    playbackBorder.classList.add('hidden');
-    playbackProgress.value = 0;
-    return;
-  }
-
-  playbackBorder.classList.remove('hidden');
-
-  const progress = playbackVideo.duration > 0
-    ? (playbackVideo.currentTime / playbackVideo.duration) * 100
-    : 0;
-
-  playbackProgress.value = progress;
-
-  const isPaused = playbackVideo.paused || playbackVideo.ended;
-
-  playbackPlay.classList.toggle('hidden', !isPaused);
-  playbackPause.classList.toggle('hidden', isPaused);
-}
-
-function bindPlaybackVideo(video) {
-  playbackVideo = video;
-
-  video.addEventListener('loadedmetadata', updatePlaybackControls);
-  video.addEventListener('timeupdate', updatePlaybackControls);
-  video.addEventListener('play', updatePlaybackControls);
-  video.addEventListener('pause', updatePlaybackControls);
-  video.addEventListener('ended', updatePlaybackControls);
-
-  updatePlaybackControls();
-}
+  function fileUrl(filename) { return '/uploads/' + encodeURIComponent(filename); }
 
 function cleanupMediaElements() {
   const mediaElements = canvasEl.querySelectorAll('video, audio');
@@ -90,34 +43,7 @@ function cleanupMediaElements() {
     media.removeAttribute('srcObject');
     media.load();
   });
-
-  playbackVideo = null;
-  playbackBorder.classList.add('hidden');
-  playbackProgress.value = 0;
-  playbackPlay.classList.remove('hidden');
-  playbackPause.classList.add('hidden');
 }
-
-  playbackPlay.addEventListener('click', () => {
-  if (!playbackVideo) return;
-
-  playbackVideo.play().catch(() => {});
-});
-
-playbackPause.addEventListener('click', () => {
-  if (!playbackVideo) return;
-
-  playbackVideo.pause();
-});
-
-playbackProgress.addEventListener('input', () => {
-  if (!playbackVideo || !Number.isFinite(playbackVideo.duration)) {
-    return;
-  }
-
-  playbackVideo.currentTime =
-    (Number(playbackProgress.value) / 100) * playbackVideo.duration;
-});
 
   function renderSourceContent(el, source) {
     el.innerHTML = '';
@@ -145,7 +71,6 @@ playbackProgress.addEventListener('input', () => {
         video.playsInline = true;
         video.preload = 'metadata';
         el.appendChild(video);
-        bindPlaybackVideo(video);
       }
     } else if (source.type === 'text') {
       const box = document.createElement('div');
