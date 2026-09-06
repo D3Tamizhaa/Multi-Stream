@@ -46,55 +46,16 @@
       <div class="editor-view" id="editor-view">
 
         <!-- Main Workspace -->
-<div class="workspace-row">
-<div class="preview-stage">
-<div class="workspace-canvas" id="workspace-canvas"></div>
-
-<div class="playback-border" id="playback-border">
-<button
-class="playback-icon-btn"
-id="playback-play"
-type="button"
-title="Play"
-aria-label="Play"
->
-<svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
-<path d="M8 5.2v13.6c0 .8.9 1.3 1.6.9l10-6.8c.6-.4.6-1.3 0-1.8l-10-6.8C8.9 4 8 4.4 8 5.2z"/>
-</svg>
-</button>
-
-<button
-class="playback-icon-btn hidden"
-id="playback-pause"
-type="button"
-title="Pause"
-aria-label="Pause"
->
-<svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
-<path d="M7 5h3v14H7zM14 5h3v14h-3z"/>
-</svg>
-</button>
-
-<input
-class="playback-progress"
-id="playback-progress"
-type="range"
-min="0"
-max="100"
-value="0"
-step="0.1"
-aria-label="Video progress"
-/>
-</div>
-</div>
-  
+        <div class="workspace-row">
+          <div class="workspace-canvas" id="workspace-canvas"></div>
 <div class="workspace-preview-toggle">
-<label class="preview-checkbox" for="preview-toggle">
-<input type="checkbox" id="preview-toggle" checked />
-<span>Preview</span>
-</label>
+
+  <label class="preview-checkbox" for="preview-toggle">
+    <input type="checkbox" id="preview-toggle" checked />
+    <span>Preview</span>
+  </label>
 </div>
-</div>
+        </div>
 
         <!-- Production Panels: Scenes / Sources / Audio Mixer -->
         <div class="panels-row">
