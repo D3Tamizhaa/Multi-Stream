@@ -344,8 +344,7 @@ input[type="checkbox"] { accent-color: var(--accent); width: 15px; height: 15px;
   right: 12px;
   top: 12px;
   display: flex;
-  flex-direction: column;
-  align-items: stretch;
+  align-items: center;
   z-index: 5;
 }
 
@@ -379,36 +378,6 @@ input[type="checkbox"] { accent-color: var(--accent); width: 15px; height: 15px;
 
 .preview-checkbox span {
   line-height: 1;
-}
-
-.preview-resolution-control {
-  margin-top: 8px;
-  padding: 8px;
-  background: rgba(13, 16, 21, .92);
-  border: 1px solid var(--border);
-  border-radius: var(--radius);
-  width: 180px;
-}
-
-.preview-resolution-control label {
-  display: block;
-  margin-bottom: 5px;
-  color: var(--text-dim);
-  font-size: 11px;
-}
-
-.preview-resolution-control select {
-  width: 100%;
-  padding: 6px 8px;
-  background: var(--bg);
-  border: 1px solid var(--border);
-  color: var(--text);
-  border-radius: var(--radius);
-  font-size: 11.5px;
-}
-
-.preview-resolution-control select:focus {
-  border-color: var(--accent);
 }
 
 /* ---- production panels row (scenes / sources / audio) ---- */
