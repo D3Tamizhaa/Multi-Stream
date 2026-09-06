@@ -551,7 +551,56 @@ function resetInteraction() {
     interaction.raf = 0;
 }
 
-  
+document.addEventListener('keydown', (e) => {
+    if (interaction.active) return;
+
+    const tag = document.activeElement?.tagName;
+    if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT') return;
+
+    const source = store.selectedSource();
+    if (!source || source.locked) return;
+
+    const step = e.shiftKey ? 10 : 1;
+
+    let dx = 0;
+    let dy = 0;
+
+    if (e.key === 'ArrowLeft') dx = -step;
+    if (e.key === 'ArrowRight') dx = step;
+    if (e.key === 'ArrowUp') dy = -step;
+    if (e.key === 'ArrowDown') dy = step;
+
+    if (!dx && !dy) return;
+
+    e.preventDefault();
+
+    const [outW, outH] = outputSize();
+
+    source.x = Math.max(
+        0,
+        Math.min(outW - (source.width || 100), (source.x || 0) + dx)
+    );
+
+    source.y = Math.max(
+        0,
+        Math.min(outH - (source.height || 100), (source.y || 100) + dy)
+    );
+
+    const scene = store.selectedScene();
+    if (!scene) return;
+
+    api.updateSource(scene.id, source.id, {
+        x: source.x,
+        y: source.y
+    }).then(() => {
+        window.dispatchEvent(new CustomEvent('sources:changed'));
+    }).catch((err) => {
+        alert(err.message);
+    });
+
+    workspace.render();
+});
+
 previewToggle.addEventListener('change', () => {
   previewEnabled = previewToggle.checked;
   render();
